@@ -1,129 +1,127 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+import tensorflow as tf
+import keras
+from keras.preprocessing.image import ImageDataGenerator ,img_to_array ,load_img
+from keras.applications.vgg19 import VGG19,preprocess_input, decode_predictions
+from keras.layers import Dense, Flatten
+from tensorflow.keras.optimizers import Adamax
+from keras.models import Model
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 
-# C extensions
-*.so
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+from google.colab import drive
+drive.mount(
+'/content/drive')
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+!unzip "/content/drive/MyDrive/DATA.zip"
+for i in ['Chickenpox','Impetigo','Infectious erythema','Scabies','Skin warts']:
+print('Training {} images are: '.format(i)+str(len(os.listdir('/content/DATA/Train)
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+for i in ['Chickenpox','Impetigo','Infectious erythema','Scabies','Skin warts']:
+print('Validation {} images are: '.format(i)+str(len(os.listdir('/content/DATA/Valid)
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
+train_datagen =ImageDataGenerator(zoom_range=0.5,shear_range=0.3,
+horizontal_flip=True,preprocessing_function=preprocess_input)
 
-# Translations
-*.mo
-*.pot
+val_datagen =ImageDataGenerator(preprocessing_function=preprocess_input)
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+train = train_datagen.flow_from_directory(directory="/content/DATA/Train",target_size=(224,224)
+val = val_datagen.flow_from_directory(directory="/content/DATA/Valid",target_size=(224,224)
 
-# Flask stuff:
-instance/
-.webassets-cache
+t_img , lable = train.next()
 
-# Scrapy stuff:
-.scrapy
+defplotImage(img_arr,lable):
+forim , l in zip(img_arr , lable):
+plt.figure(figsize=(5,5))
+plt.imshow(im/255)
+plt.show()
+plotImage(t_img[:3], lable[:3])
 
-# Sphinx documentation
-docs/_build/
 
-# PyBuilder
-target/
+base_model = VGG19(input_shape=(224,224,3),include_top=False)
+for layers in
+base_model.layers: layers.trainable = False
 
-# Jupyter Notebook
-.ipynb_checkpoints
+base_model.summary()
 
-# IPython
-profile_default/
-ipython_config.py
+x = Flatten()(base_model.output)
+x = Dense(units=128, activation='tanh')(x)
+x = Dense(units=128, activation='tanh')(x)
+x = Dense(units=128, activation='tanh')(x)
+x = Dense(units=5, activation='softmax')(x)
 
-# pyenv
-.python-version
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+model = Model(base_model.input, x)
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
+model.summary()
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+model.compile(Adamax(lr=0.0005), loss='categorical_crossentropy', metrics=['accuracy'])
 
-# SageMath parsed files
-*.sage.py
+es = EarlyStopping(monitor='val_accuracy' , min_delta= 0.01 , patience=
+20 ,verbose=1)
+mc = ModelCheckpoint(filepath="best_model.h5"
+,monitor='val_accuracy',min_delta=0.01,patience=20,verbose=1, save_best_only=True)
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+cb = [es,mc]
 
-# Spyder project settings
-.spyderproject
-.spyproject
+his = model.fit_generator(train,epochs=70,verbose=1,validation_data= val,
+callbacks=cb)
 
-# Rope project settings
-.ropeproject
+accuracy=his.history['accuracy']
+val_accuracy=his.history['val_accuracy']
+loss=his.history['loss']
+val_loss=his.history['val_loss']
+epochs=range(len(accuracy))
+fig = plt.figure(figsize=(5,5))
+plt.plot(epochs, accuracy,'b', label="Training Accuracy")
 
-# mkdocs documentation
-/site
+plt.plot(epochs, val_accuracy,'r', label="Validation Accuracy")
+plt.xlabel('Epoch')plt.ylabel('Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.legend(loc='lower right')
+plt.show()
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+accuracy=his.history['accuracy']
+val_accuracy=his.history['val_accuracy']
+loss=his.history['loss']
+val_loss=his.history['val_loss']
+epochs=range(len(accuracy))
+fig = plt.figure(figsize=(5,5))
+plt.plot(epochs, loss,'b', label="Training Loss")
+plt.plot(epochs, val_loss,'r', label="Validation Loss")
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training and Validation loss')
+plt.legend(loc='upper right')
+plt.show()
 
-# Pyre type checker
-.pyre/
+
+from keras.models import load_model
+model = load_model("/content/best_model.h5")
+
+test_datagen =ImageDataGenerator(preprocessing_function=preprocess_input)
+test = test_datagen.flow_from_directory(directory="/content/DATA/Test",target_size=(224,224),batch_size=30)
+
+score ,acc = model.evaluate(test,verbose=0)
+print("Test score:",score)print("Test accuracy:",acc)
+
+acc= model.evaluate_generator(test)[1]
+print
+(f"The accuracy of the model is:{acc*100}%")
+
+ref =dict(zip(list(train.class_indices.values()),
+list(train.class_indices.keys())))
+
+def prediction(path):
+img = load_img(path, target_size=(224,224))
+i=img_to_array(img)
+im =preprocess_input(i)
+img =np.expand_dims(im, axis=0)
+pred = np.argmax(model.predict(img))
+print(f" The Skin Disease Belongs To {ref[pred] }")
+
+path= "/content/DATA/Test/Impetigo/Im16.JPG"
+prediction(path)
